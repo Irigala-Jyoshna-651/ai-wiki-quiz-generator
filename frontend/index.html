@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Wiki Quiz Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    input {
+      width: 70%;
+      padding: 10px;
+      margin-right: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .card {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .options li {
+      list-style: none;
+      padding: 5px 0;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      input {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .tabs {
+        flex-direction: column;
+      }
+    }
+
+    .modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  margin: 10% auto;
+  width: 80%;
+  border-radius: 10px;
+}
+
+.close {
+  float: right;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+  </style>
+</head>
+
+<body>
+
+<h1>AI Wiki Quiz Generator</h1>
+
+<div class="container">
+
+  <div class="tabs">
+    <button onclick="showGenerate()">Generate Quiz</button>
+    <button onclick="showHistory()">Past Quizzes</button>
+  </div>
+
+  <!-- Generate Quiz -->
+  <div id="generateTab">
+    <h3>Generate Quiz</h3>
+    <input id="urlInput" placeholder="Paste Wikipedia URL">
+    <button onclick="generateQuiz()">Generate</button>
+    <div id="quizOutput"></div>
+  </div>
+
+  <!-- History -->
+  <div id="historyTab" class="hidden">
+    <h3>Past Quizzes</h3>
+    <button onclick="loadHistory()">Load History</button>
+    <div id="historyOutput"></div>
+  </div>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span onclick="closeModal()" class="close">&times;</span>
+      <pre id="modalText"></pre>
+    </div>
+  </div>
+
+
+</div>
+
+<script>
+function showGenerate() {
+  document.getElementById("generateTab").classList.remove("hidden");
+  document.getElementById("historyTab").classList.add("hidden");
+}
+
+function showHistory() {
+  document.getElementById("historyTab").classList.remove("hidden");
+  document.getElementById("generateTab").classList.add("hidden");
+}
+
+async function generateQuiz() {
+  const url = document.getElementById("urlInput").value;
+  const res = await fetch(`http://127.0.0.1:8000/generate?url=${url}`);
+  const data = await res.json();
+
+  let html = `<h2>${data.title}</h2>`;
+
+  data.quiz.quiz.forEach((q, i) => {
+    html += `
+      <div class="card">
+        <h4>Q${i+1}. ${q.question}</h4>
+        <ul class="options">
+          ${q.options.map(opt => `<li>${opt}</li>`).join("")}
+        </ul>
+        <p><b>Answer:</b> ${q.answer}</p>
+        <p><b>Explanation:</b> ${q.explanation}</p>
+        <span class="badge">${q.difficulty}</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("quizOutput").innerHTML = html;
+}
+
+async function loadHistory() {
+  const res = await fetch("http://127.0.0.1:8000/history");
+  const data = await res.json();
+
+  let html = "";
+
+  data.forEach(item => {
+    html += `
+      <div class="card">
+        <p><b>URL:</b> ${item.url}</p>
+        <button onclick='showDetails(${JSON.stringify(item.quiz)})'>Details</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("historyOutput").innerHTML = html;
+}
+function showDetails(data) {
+  document.getElementById("modalText").textContent =
+    JSON.stringify(data, null, 2);
+
+  document.getElementById("modal").style.display = "block";
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+</script>
+
+</body>
+</html>
